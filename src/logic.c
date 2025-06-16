@@ -8,7 +8,14 @@ static Function funcs[MAX_FUNCS];
 static int func_count = 0;
 static const char *default_names[MAX_VARS] = {"x","y","z","s","t","u","v","w"};
 
-void logic_init(void) { func_count = 0; }
+void logic_init(void)
+{
+    for (int i = 0; i < func_count; ++i) {
+        free(funcs[i].formula);
+        funcs[i].formula = NULL;
+    }
+    func_count = 0;
+}
 
 static Function *lookup(const char *name)
 {
@@ -27,7 +34,8 @@ static int compute_arity(int num_entries)
 }
 
 int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
-                       const unsigned char *table, int num_entries)
+                       const unsigned char *table, int num_entries,
+                       const char *formula)
 {
     if (num_entries > (1 << MAX_VARS)) {
         fprintf(stderr, "Table too large (max %d)\n", 1 << MAX_VARS);
@@ -45,7 +53,12 @@ int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
 
     /* overwrite if already exists */
     Function *existing = lookup(name);
-    if (existing) { *existing = funcs[func_count - 1]; func_count--; }
+    if (existing) {
+        free(existing->formula);
+        *existing = funcs[func_count - 1];
+        funcs[func_count - 1].formula = NULL;
+        func_count--;
+    }
 
     Function *f = &funcs[func_count++];
     strncpy(f->name, name, MAX_NAME - 1);
@@ -60,6 +73,7 @@ int add_function_table(const char *name, int arity, const char vars[][MAX_NAME],
     }
 
     memcpy(f->table, table, num_entries);
+    if (formula) f->formula = strdup(formula); else f->formula = NULL;
     printf("→ define %s (%d vars) ok\n", name, arity);
     return 0;
 }
@@ -111,4 +125,61 @@ void eval_and_print(const char *name, const int *values, int value_count)
     }
     int res = eval_function(f, values);
     printf("→ eval %s; %d\n", name, res);
+}
+
+static char *table_to_dnf(const Function *f)
+{
+    if (f->arity == 0) {
+        return strdup(f->table[0] ? "1" : "0");
+    }
+
+    char *res = NULL;
+    int size = 1 << f->arity;
+    for (int idx = 0; idx < size; ++idx) {
+        if (!f->table[idx]) continue;
+        char *term = NULL;
+        for (int i = 0; i < f->arity; ++i) {
+            int bit = (idx >> (f->arity - 1 - i)) & 1;
+            char *part;
+            if (bit)
+                asprintf(&part, "%s", f->vars[i]);
+            else
+                asprintf(&part, "!%s", f->vars[i]);
+            if (!term)
+                term = part;
+            else {
+                char *tmp = term;
+                asprintf(&term, "%s and %s", tmp, part);
+                free(tmp);
+                free(part);
+            }
+        }
+        char *wrapped;
+        asprintf(&wrapped, "(%s)", term);
+        free(term);
+        if (!res)
+            res = wrapped;
+        else {
+            char *tmp = res;
+            asprintf(&res, "%s or %s", tmp, wrapped);
+            free(tmp);
+            free(wrapped);
+        }
+    }
+    if (!res) return strdup("0");
+    return res;
+}
+
+void print_formula(const char *name)
+{
+    Function *f = lookup(name);
+    if (!f) { fprintf(stderr, "Unknown function %s\n", name); return; }
+    printf("→ formula %s; ", name);
+    if (f->formula) {
+        printf("%s\n", f->formula);
+        return;
+    }
+    char *tmp = table_to_dnf(f);
+    printf("%s\n", tmp);
+    free(tmp);
 }

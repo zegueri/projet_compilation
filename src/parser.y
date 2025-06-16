@@ -101,6 +101,44 @@ static const char *default_names[MAX_VARS] = {"x","y","z","s","t","u","v","w"};
 static int  vals[8];  /* pour eval */
 static int  valcnt2 = 0;
 
+static int node_prec(enum NType t){
+    switch(t){
+        case N_IMPL: return 1;
+        case N_OR:   return 2;
+        case N_XOR:  return 3;
+        case N_AND:  return 4;
+        case N_NOT:  return 5;
+        default:     return 6;
+    }
+}
+
+static char* node_to_string_rec(const struct Node*n,int parent_prec){
+    char*res=NULL; char*tmp1,*tmp2;
+    switch(n->type){
+        case N_CONST:
+            asprintf(&res, "%d", n->val); break;
+        case N_VAR:
+            asprintf(&res, "%s", varnames[n->vidx]); break;
+        case N_NOT:
+            tmp1=node_to_string_rec(n->l,node_prec(N_NOT));
+            asprintf(&res, "!%s", tmp1);
+            free(tmp1); break;
+        case N_AND:
+        case N_OR:
+        case N_XOR:
+        case N_IMPL:
+            tmp1=node_to_string_rec(n->l,node_prec(n->type));
+            tmp2=node_to_string_rec(n->r,node_prec(n->type)+1);
+            const char*op=(n->type==N_AND?"and":n->type==N_OR?"or":n->type==N_XOR?"xor":"=>");
+            asprintf(&res, "%s %s %s", tmp1, op, tmp2);
+            free(tmp1); free(tmp2); break;
+    }
+    if(node_prec(n->type)<parent_prec){ char*tmp=res; asprintf(&res,"(%s)",tmp); free(tmp); }
+    return res;
+}
+
+static char* node_to_string(const struct Node*n){ return node_to_string_rec(n,0); }
+
 static int get_var_index(const char*name){
     for(int i=0;i<varcnt;++i)
         if(!strcmp(name,varnames[i])) return i;
@@ -166,12 +204,14 @@ command:
       KW_LIST                                { list_functions(); }
     | define_cmd
     | KW_TABLE   IDENT                       { print_table($2);     free($2); }
-    | KW_VARLIST IDENT                       { print_varlist($2);   free($2); }
-    | KW_EVAL    IDENT KW_AT value_seq       { eval_and_print($2,vals,valcnt2); free($2); }
-    ;
+      | KW_VARLIST IDENT                       { print_varlist($2);   free($2); }
+      | KW_FORMULA IDENT                       { print_formula($2);   free($2); }
+      | KW_EVAL    IDENT KW_AT value_seq       { eval_and_print($2,vals,valcnt2); free($2); }
+      ;
 
 /* ----- define ----- */
 define_cmd:
+
       KW_DEFINE IDENT opt_varlist EQUAL table_def
         {
           if (varcnt > 0)
@@ -191,8 +231,10 @@ define_cmd:
                   v[i] = (idx >> (arity-1-i)) & 1;
               tbl[idx] = eval_node($5,v);
           }
-          add_function_table($2,arity,varnames,tbl,size);
-          free_node($5); free($2);
+           char *form = node_to_string($5);
+           add_function_table($2,arity,varnames,tbl,size,form);
+           free(form);
+           free_node($5); free($2);
         }
     ;
 
