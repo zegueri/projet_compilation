@@ -1,0 +1,20 @@
+Unknown function unknown
+eval nand: expected 2 values, got 1
+Unknown function unknown
+Logic
+
+→ define nand (2 vars) ok
+→ define imp (2 vars) ok
+→ define f (3 vars) ok
+→ define nnot (1 vars) ok
+→ list; nand imp f nnot 
+→ varlist nnot; u 
+→ table nnot; { 1 0 }
+→ formula imp; a => b
+→ formula nand; (!x and !y) or (!x and y) or (x and !y)
+→ formula f; x or !z
+→ eval nnot; 1
+→ eval nnot; 0
+→ eval imp; 1
+→ eval nand; 1
+→ varlist f; x y z 

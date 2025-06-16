@@ -26,6 +26,9 @@ void print_table(const char *name);
 
 void eval_and_print(const char *name, const int *values, int value_count);
 
+const Function *get_function(const char *name);
+int eval_function(const Function *f, const int *values);
+
 void print_formula(const char *name);
 
 

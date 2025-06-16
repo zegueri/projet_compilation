@@ -1,0 +1,64 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{fullpage}
+\title{Mini-interpréteur logique}
+\author{Projet compilation}
+\date{}
+\begin{document}
+\maketitle
+\section*{Introduction}
+Ce mini-projet met en \oe uvre un interpréteur capable de manipuler des fonctions logiques définies soit par une formule, soit par une table de vérité.  Il s'appuie sur \texttt{flex} et \texttt{bison} pour l'analyse lexicale et syntaxique.
+
+\section*{Structures de données}
+Les fonctions sont stockées dans une structure~:\newline
+\begin{lstlisting}[language=C]
+typedef struct {
+    char name[MAX_NAME];
+    int  arity;                     /* nombre de variables */
+    char vars[MAX_VARS][MAX_NAME];  /* noms de variables   */
+    int  num_entries;               /* taille de la table  */
+    unsigned char table[1<<MAX_VARS];
+    char *formula;                  /* texte de la formule */
+} Function;
+\end{lstlisting}
+Un tableau fixe de \verb|Function| est maintenu (\verb|MAX_FUNCS|), chaque entrée décrivant une fonction.  Les tables de vérité sont stockées directement sous forme de tableau de booléens; lorsqu'une fonction est créée à partir d'une formule, celle-ci est évaluée pour remplir la table et sa représentation textuelle est mémorisée.
+
+Les formules booléennes sont d'abord représentées par des arbres dont les nœuds sont de type~:\newline
+\begin{lstlisting}[language=C]
+enum NType { N_CONST, N_VAR, N_NOT, N_AND, N_OR, N_XOR, N_IMPL, N_FUNCALL };
+struct Node {
+    enum NType type;
+    int val, vidx;
+    struct Node *l, *r;
+    char *fname;         /* appel de fonction */
+    struct Node **args;  /* arguments */
+    int argc;
+};
+\end{lstlisting}
+Ces arbres sont produits par l'analyse syntaxique puis évalués pour remplir la table de vérité associée à la définition.
+
+\section*{Fonctionnalités réalisées}
+\begin{itemize}
+    \item \textbf{define~:} définition d'une fonction via une formule ou une table.
+    \item \textbf{list~:} affichage des fonctions connues.
+    \item \textbf{varlist~:} liste des variables d'une fonction.
+    \item \textbf{table~:} impression de la table de vérité.
+    \item \textbf{eval~:} évaluation d'une fonction sur des valeurs données.
+    \item \textbf{formula~:} génération d'une formule équivalente à une fonction (depuis la définition ou une forme normale).
+    \item Possibilité de lire les commandes depuis un fichier plutôt qu'en mode interactif.
+    \item Appel de fonctions déjà définies à l'intérieur d'une nouvelle définition.
+\end{itemize}
+L'interpréteur reconnaît les mots-clés sans tenir compte de la casse, gère jusqu'à huit variables et peut manipuler une centaine de fonctions simultanément.  Des tests automatiques sont fournis (\verb|tests/|) et validés par \verb|make test|.
+
+\section*{Limites et améliorations possibles}
+\begin{itemize}
+    \item La gestion des erreurs reste minimale.  Certaines fautes provoquent l'arrêt brutal du programme.
+    \item Les tables sont limitées à huit variables pour simplifier les structures et les calculs.
+    \item Aucune simplification n'est effectuée lors de la génération automatique d'une formule à partir d'une table; on obtient une forme normale disjonctive potentiellement longue.
+    \item Pour étendre le projet, on pourrait améliorer l'analyse des erreurs, ajouter des options pour charger ou sauvegarder les définitions, ou supporter un plus grand nombre de variables.
+\end{itemize}
+
+\end{document}
