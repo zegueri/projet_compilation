@@ -132,6 +132,21 @@ static char* node_to_string_rec(const struct Node*n,int parent_prec){
             const char*op=(n->type==N_AND?"and":n->type==N_OR?"or":n->type==N_XOR?"xor":"=>");
             asprintf(&res, "%s %s %s", tmp1, op, tmp2);
             free(tmp1); free(tmp2); break;
+        case N_FUNCALL:{
+            asprintf(&res, "%s(", n->fname);
+            for(int i=0;i<n->argc;i++){
+                char *arg=node_to_string_rec(n->args[i],0);
+                char *tmp;
+                if(i==0)
+                    asprintf(&tmp, "%s%s", res, arg);
+                else
+                    asprintf(&tmp, "%s, %s", res, arg);
+                free(res); res=tmp; free(arg);
+            }
+            char *tmp;
+            asprintf(&tmp, "%s)", res);
+            free(res); res=tmp;
+            break;}
     }
     if(node_prec(n->type)<parent_prec){ char*tmp=res; asprintf(&res,"(%s)",tmp); free(tmp); }
     return res;
@@ -215,9 +230,9 @@ define_cmd:
       KW_DEFINE IDENT opt_varlist EQUAL table_def
         {
           if (varcnt > 0)
-              add_function_table($2, varcnt, varnames, boolbuf, bool_count);
+              add_function_table($2, varcnt, varnames, boolbuf, bool_count, NULL);
           else
-              add_function_table($2, -1, NULL, boolbuf, bool_count);
+              add_function_table($2, -1, NULL, boolbuf, bool_count, NULL);
           free($2);
         }
     | KW_DEFINE IDENT opt_varlist EQUAL expr
