@@ -18,6 +18,7 @@ Run `make` to build the `logic_interpreter` binary. `flex` and `bison` must be i
 - `varlist NAME` – show the variables used by a function.
 - `table NAME` – print the truth table of a function.
 - `eval NAME at VALUES` – evaluate a function with the provided values.
+- `formula NAME` – display a formula representing the function.
 
 ## Tests
 
@@ -25,4 +26,4 @@ Example command files are located in `tests/`. Run `make test` to build the inte
 
 ## Limitations
 
-The optional `formula` command is not implemented and will trigger a parse error. Defining functions by calling other functions is also unsupported. Error handling is intentionally very light.
+Error handling remains very light and some edge cases may not be reported gracefully.

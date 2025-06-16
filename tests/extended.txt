@@ -1,0 +1,18 @@
+define nand(x,y) = { 1 1 1 0 }
+define imp(a,b) = a => b
+define f = x or !z
+define nnot(u) = nand(u,u)
+LiSt
+varlist nnot
+table nnot
+formula imp
+formula nand
+formula f
+eval nnot at 0
+eval nnot at 1
+eval imp at 0 1
+eval nand at 1 0
+varlist f
+varlist unknown
+eval nand at 1
+formula unknown
