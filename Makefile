@@ -16,3 +16,6 @@ logic_interpreter: lex.yy.c parser.tab.c src/main.c src/logic.c
 
 clean:
 	rm -f logic_interpreter lex.yy.c parser.tab.c parser.tab.h parser.output
+
+test: logic_interpreter
+	./tests/run_tests.sh
