@@ -24,4 +24,8 @@ void print_table(const char *name);
 
 void eval_and_print(const char *name, const int *values, int value_count);
 
+/* helpers for using functions in expressions */
+const Function *get_function(const char *name);
+int eval_function(const Function *f, const int *values);
+
 #endif
