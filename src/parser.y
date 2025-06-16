@@ -45,6 +45,8 @@ static int  bool_count = 0;
 
 static char varnames[MAX_VARS][MAX_NAME];
 static int  varcnt = 0;
+static int  explicit_varlist = 0;
+static const char *default_names[MAX_VARS] = {"x","y","z","s","t","u","v","w"};
 
 static int  vals[8];  /* pour eval */
 static int  valcnt2 = 0;
@@ -52,6 +54,22 @@ static int  valcnt2 = 0;
 static int get_var_index(const char*name){
     for(int i=0;i<varcnt;++i)
         if(!strcmp(name,varnames[i])) return i;
+    if(!explicit_varlist){
+        for(int i=0;i<MAX_VARS;++i){
+            if(!strcmp(name, default_names[i])){
+                if(i >= MAX_VARS){
+                    fprintf(stderr,"Trop de variables (max %d)\n",MAX_VARS);
+                    return 0;
+                }
+                for(int j=varcnt; j<=i && j<MAX_VARS; ++j){
+                    strncpy(varnames[j], default_names[j], MAX_NAME-1);
+                    varnames[j][MAX_NAME-1]='\0';
+                }
+                if(i >= varcnt) varcnt = i+1;
+                return i;
+            }
+        }
+    }
     if(varcnt>=MAX_VARS){
         fprintf(stderr,"Trop de variables (max %d)\n",MAX_VARS);
         return 0;
@@ -127,8 +145,8 @@ define_cmd:
 
 /* ----- liste optionnelle de variables ----- */
 opt_varlist:
-      /* vide */                { varcnt = 0; }
-    | LPAREN id_list RPAREN
+      /* vide */                { varcnt = 0; explicit_varlist = 0; }
+    | LPAREN { explicit_varlist = 1; } id_list RPAREN
     ;
 
 id_list:
