@@ -10,13 +10,36 @@ extern int yylex(void);
 
 /* ---------- structures et helpers ---------- */
 enum NType { N_CONST, N_VAR, N_NOT,
-               N_AND, N_OR, N_XOR, N_IMPL };
+               N_AND, N_OR, N_XOR, N_IMPL,
+               N_FUNCALL };
+
+struct ArgList {
+    struct Node **items;
+    int count;
+};
+
+static struct ArgList *alist_new(struct Node *n){
+    struct ArgList *a = malloc(sizeof(*a));
+    a->items = malloc(sizeof(struct Node*));
+    a->items[0] = n;
+    a->count = 1;
+    return a;
+}
+
+static struct ArgList *alist_add(struct ArgList *a, struct Node *n){
+    a->items = realloc(a->items, sizeof(struct Node*)*(a->count+1));
+    a->items[a->count++] = n;
+    return a;
+}
 
 struct Node {
     enum NType type;
     int   val;        /* pour N_CONST */
     int   vidx;       /* pour N_VAR   */
     struct Node *l,*r;
+    char *fname;          /* pour N_FUNCALL */
+    struct Node **args;   /* array of arguments */
+    int   argc;
 };
 
 /* fabrique de nœuds */
@@ -24,6 +47,7 @@ struct Node *mk_const(int v){ struct Node*n=calloc(1,sizeof(*n)); n->type=N_CONS
 struct Node *mk_var(int id){ struct Node*n=calloc(1,sizeof(*n)); n->type=N_VAR;   n->vidx=id; return n; }
 struct Node *mk_un (enum NType t,struct Node*a){ struct Node*n=calloc(1,sizeof(*n)); n->type=t; n->l=a;        return n; }
 struct Node *mk_bin(enum NType t, struct Node*a,struct Node*b){ struct Node*n=calloc(1,sizeof(*n)); n->type=t; n->l=a; n->r=b; return n; }
+struct Node *mk_funcall(char *name, struct Node **args, int argc){ struct Node*n=calloc(1,sizeof(*n)); n->type=N_FUNCALL; n->fname=name; n->args=args; n->argc=argc; return n; }
 
 static int eval_node(const struct Node*n,const int*vals){
     switch(n->type){
@@ -34,10 +58,32 @@ static int eval_node(const struct Node*n,const int*vals){
         case N_OR:    return eval_node(n->l,vals)|eval_node(n->r,vals);
         case N_XOR:   return eval_node(n->l,vals)^eval_node(n->r,vals);
         case N_IMPL:  return (!eval_node(n->l,vals))|eval_node(n->r,vals);
+        case N_FUNCALL: {
+            const Function *f = get_function(n->fname);
+            if(!f){ fprintf(stderr,"Unknown function %s\n", n->fname); return 0; }
+            if(n->argc != f->arity){
+                fprintf(stderr,"call %s: expected %d args, got %d\n", n->fname, f->arity, n->argc);
+                return 0;
+            }
+            int tmp[MAX_VARS];
+            for(int i=0;i<n->argc;i++) tmp[i]=eval_node(n->args[i],vals);
+            return eval_function(f,tmp);
+        }
     }
     return 0;
 }
-void free_node(struct Node*n){ if(!n)return; free_node(n->l); free_node(n->r); free(n); }
+void free_node(struct Node*n){
+    if(!n) return;
+    if(n->type==N_FUNCALL){
+        for(int i=0;i<n->argc;i++) free_node(n->args[i]);
+        free(n->args);
+        free(n->fname);
+    }else{
+        free_node(n->l);
+        free_node(n->r);
+    }
+    free(n);
+}
 
 /* ---------- buffers ---------- */
 static unsigned char boolbuf[256];   /* tables brutes */
@@ -66,6 +112,7 @@ static int get_var_index(const char*name){
     int   num;
     char *str;
     struct Node *node;
+    struct ArgList *alist;
 }
 
 %token <num> BOOL
@@ -76,6 +123,7 @@ static int get_var_index(const char*name){
 %token AND OR XOR NOT EQUAL IMPL
 
 %type <node> expr
+%type <alist> expr_list
 
 %right IMPL
 %left  OR KW_OR
@@ -144,6 +192,12 @@ value_seq:
     | value_seq BOOL  {           vals[valcnt2++]=$2; }
     ;
 
+/* ----- liste d'expressions ----- */
+expr_list:
+      expr                  { $$ = alist_new($1); }
+    | expr_list COMMA expr  { $$ = alist_add($1,$3); }
+    ;
+
 /* ----- expressions booléennes ----- */
 expr:
       expr IMPL expr            { $$ = mk_bin(N_IMPL,$1,$3); }
@@ -156,6 +210,8 @@ expr:
     | NOT expr                  { $$ = mk_un (N_NOT,$2);    }
     | KW_NOT expr               { $$ = mk_un (N_NOT,$2);    }
     | LPAREN expr RPAREN        { $$ = $2; }
+    | IDENT LPAREN RPAREN       { $$ = mk_funcall($1,NULL,0); }
+    | IDENT LPAREN expr_list RPAREN { $$ = mk_funcall($1,$3->items,$3->count); free($3); }
     | IDENT                     { $$ = mk_var(get_var_index($1)); free($1); }
     | BOOL                      { $$ = mk_const($1); }
     ;
