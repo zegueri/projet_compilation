@@ -102,7 +102,13 @@ command:
 /* ----- define ----- */
 define_cmd:
       KW_DEFINE IDENT opt_varlist EQUAL table_def
-        { add_function_table($2,-1,NULL,boolbuf,bool_count); free($2); }
+        {
+          if (varcnt > 0)
+              add_function_table($2, varcnt, varnames, boolbuf, bool_count);
+          else
+              add_function_table($2, -1, NULL, boolbuf, bool_count);
+          free($2);
+        }
     | KW_DEFINE IDENT opt_varlist EQUAL expr
         {
           int arity = varcnt;
