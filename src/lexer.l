@@ -1,4 +1,4 @@
-%option noyywrap yylineno
+%option noyywrap yylineno noinput nounput
 %{
 #include "logic.h"
 #include "parser.tab.h"

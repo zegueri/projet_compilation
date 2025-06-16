@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "logic.h"
 #include "parser.tab.h"
 #include <stdio.h>

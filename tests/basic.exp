@@ -4,6 +4,6 @@ Logic
 → define f (1 vars) ok
 → list; nand f 
 → varlist nand; x y 
-→ varlist f; x 
+→ varlist f; a 
 → table nand; { 1 1 1 0 }
 → eval nand; 1
