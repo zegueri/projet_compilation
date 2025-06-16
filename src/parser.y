@@ -215,9 +215,9 @@ define_cmd:
       KW_DEFINE IDENT opt_varlist EQUAL table_def
         {
           if (varcnt > 0)
-              add_function_table($2, varcnt, varnames, boolbuf, bool_count);
+              add_function_table($2, varcnt, varnames, boolbuf, bool_count, NULL);
           else
-              add_function_table($2, -1, NULL, boolbuf, bool_count);
+              add_function_table($2, -1, NULL, boolbuf, bool_count, NULL);
           free($2);
         }
     | KW_DEFINE IDENT opt_varlist EQUAL expr
