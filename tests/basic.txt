@@ -1,0 +1,7 @@
+define nand(x,y) = { 1 1 1 0 }
+define f(a) = { 0 1 }
+list
+varlist nand
+varlist f
+table nand
+eval nand at 1 0

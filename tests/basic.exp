@@ -1,0 +1,9 @@
+Logic
+
+→ define nand (2 vars) ok
+→ define f (1 vars) ok
+→ list; nand f 
+→ varlist nand; x y 
+→ varlist f; x 
+→ table nand; { 1 1 1 0 }
+→ eval nand; 1
