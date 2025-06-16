@@ -6,6 +6,8 @@
 
 int yyerror(const char *s);
 extern int yylex(void);
+extern int yylineno;
+extern int from_file;
 
 
 /* ---------- structures et helpers ---------- */
@@ -161,4 +163,11 @@ expr:
     ;
 %%
 
-int yyerror(const char *s){ fprintf(stderr,"Parse error: %s\n",s); return 0; }
+int yyerror(const char *s){
+    if(from_file){
+        fprintf(stderr,"Syntax error line %d: %s\n", yylineno, s);
+        exit(EXIT_FAILURE);
+    }
+    fprintf(stderr,"Parse error: %s\n", s);
+    return 0;
+}
