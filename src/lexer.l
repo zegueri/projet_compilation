@@ -1,14 +1,16 @@
 %option noyywrap
 %{
-#include "logic.h"         
-#include "parser.tab.h"    
+#include "logic.h"
+#include "parser.tab.h"
 #include <string.h>
 #include <ctype.h>
+
+int line_num = 1; /* track current line for error reporting */
 %}
 
 %%
 [ \t]+                    /* skip whitespace */
-"\n"                       return NEWLINE;
+"\n"                       { line_num++; return NEWLINE; }
 "("                        return LPAREN;
 ")"                        return RPAREN;
 "{"                        return LBRACE;
@@ -41,5 +43,5 @@
     return IDENT;
 }
 
-.                          { fprintf(stderr, "Unknown char: %s\n", yytext); }
+.                          { fprintf(stderr, "Unknown char on line %d: %s\n", line_num, yytext); }
 %%

@@ -6,6 +6,8 @@
 
 int yyerror(const char *s);
 extern int yylex(void);
+extern char *yytext;
+extern int line_num;
 
 
 /* ---------- structures et helpers ---------- */
@@ -89,6 +91,7 @@ input:                /* vide */ | input line ;
 
 line:  command NEWLINE
      | NEWLINE
+     | error NEWLINE  { yyerrok; yyclearin; fprintf(stderr, "Recovering to next command...\n"); }
      ;
 
 command:
@@ -161,4 +164,7 @@ expr:
     ;
 %%
 
-int yyerror(const char *s){ fprintf(stderr,"Parse error: %s\n",s); return 0; }
+int yyerror(const char *s){
+    fprintf(stderr, "Parse error on line %d near '%s': %s\n", line_num, yytext, s);
+    return 0;
+}
