@@ -103,7 +103,12 @@ void print_table(const char *name)
     printf("}\n");
 }
 
-static int eval_function(const Function *f, const int *values)
+const Function *get_function(const char *name)
+{
+    return lookup(name);
+}
+
+int eval_function(const Function *f, const int *values)
 {
     int idx = 0;
     for (int i = 0; i < f->arity; ++i) idx = (idx << 1) | (values[i] & 1);

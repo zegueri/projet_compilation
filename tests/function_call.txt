@@ -1,0 +1,2 @@
+define ff(x,y) = x or !y
+define gg(a,b,c,d) = a or ff(b, ff(c,d))
